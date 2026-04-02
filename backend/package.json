@@ -1,0 +1,31 @@
+{
+  "name": "saas-intelligence-portal",
+  "version": "1.0.0",
+  "description": "Production-grade SaaS Intelligence Decision-Support System",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node src/db/seed.js",
+    "test-integration": "node test-integration.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "node-fetch": "^2.7.0",
+    "nodemon": "^3.0.2"
+  },
+  "keywords": [
+    "saas",
+    "intelligence",
+    "decision-support",
+    "analytics"
+  ],
+  "author": "Senior Backend Engineer",
+  "license": "MIT"
+}
