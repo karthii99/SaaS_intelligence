@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InsightPanel from "@/components/InsightPanel";
 import ScoreBar from "@/components/ScoreBar";
 import ScoreRing from "@/components/ScoreRing";
-import { ENDPOINTS } from "@/config/api";
 
 const verdictStyles = {
   Strong: "bg-success/15 text-success border-success/30",
@@ -29,7 +28,7 @@ const ClientDetail = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(ENDPOINTS.CLIENT_DETAIL(id))
+    fetch(`http://localhost:3000/api/clients/${id}`)
       .then(res => res.json())
       .then(data => {
         const api = data.data;

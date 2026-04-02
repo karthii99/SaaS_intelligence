@@ -7,7 +7,6 @@ import { ClientCardSkeleton, ClientCardListSkeleton } from "@/components/ClientC
 import SearchBar from "@/components/SearchBar";
 import FilterDropdown from "@/components/FilterDropdown";
 import { Button } from "@/components/ui/button";
-import { API_URL, ENDPOINTS } from "@/config/api";
 
 const industries = [
   { value: "all", label: "All Industries" },
@@ -34,7 +33,7 @@ const Index = () => {
   const [clients, setClients] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch(ENDPOINTS.CLIENTS)
+    fetch("http://localhost:3000/api/clients")
       .then(res => res.json())
       .then(data => {
         setClients(data.data || []);
