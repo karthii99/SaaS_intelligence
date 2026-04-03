@@ -110,7 +110,23 @@ class IntelligenceEngine {
       weaknesses.push('Unclear or incomplete pricing strategy');
     }
 
-    return weaknesses;
+    // Add weaknesses for strong companies to keep it realistic
+    if (details.offerings?.length >= 5 && details.capabilities?.length >= 5) {
+      weaknesses.push('Complex product portfolio may dilute focus');
+      weaknesses.push('High operational complexity could impact agility');
+    }
+    
+    if (details.differentiators?.length >= 4) {
+      weaknesses.push('Market saturation risk in core segments');
+    }
+
+    // Ensure at least one weakness for realistic analysis
+    if (weaknesses.length === 0) {
+      weaknesses.push('Limited brand recognition in emerging markets');
+      weaknesses.push('Dependency on key customer segments');
+    }
+
+    return weaknesses.slice(0, 3); // Limit to 3 weaknesses
   }
 
   /**
