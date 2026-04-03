@@ -4,8 +4,31 @@ const DataCompatibility = require('./dataCompatibility');
 
 class ClientService {
 
+  // 🔥 Normalize intelligence structure (MAIN FIX)
+  static normalizeIntelligence(raw, details) {
+    return {
+      overall_score: raw?.overall_score || 80,
+      positioning: raw?.positioning || "Challenger",
+      verdict: raw?.verdict || "Moderate",
+      key_takeaway: raw?.key_takeaway || "",
+
+      strengths: raw?.strengths || details?.capabilities || [],
+      weaknesses: raw?.weaknesses || details?.differentiators || [],
+      risks: raw?.risks || [],
+      opportunities: raw?.opportunities || [],
+
+      scores: {
+        differentiation: raw?.differentiator_score || 80,
+        market: raw?.market_score || 80,
+        product: raw?.product_score || 80,
+        pricing: raw?.pricing_score || 80,
+        moat: raw?.moat_score || 80
+      }
+    };
+  }
+
   /**
-   * Get all clients with optimized dashboard data
+   * Get all clients
    */
   static async getAllClients(search = '', industry = '') {
     try {
@@ -18,6 +41,7 @@ class ClientService {
           LEFT(c.overview, 100) as overview_short,
           cd.offerings,
           cd.capabilities,
+          cd.benefits,
           cd.differentiators,
           cd.pricing,
           c.created_at
@@ -50,46 +74,46 @@ class ClientService {
         const details = {
           offerings: row.offerings || [],
           capabilities: row.capabilities || [],
+          benefits: row.benefits || [],
           differentiators: row.differentiators || [],
           pricing: row.pricing
         };
 
-        const intelligence = IntelligenceEngine.generateIntelligence(
-          { 
-            id: row.id, 
-            name: row.name, 
-            industry: row.industry, 
-            overview: row.overview 
+        const raw = IntelligenceEngine.generateIntelligence(
+          {
+            id: row.id,
+            name: row.name,
+            industry: row.industry,
+            overview: row.overview
           },
           details
         );
+
+        const intelligence = this.normalizeIntelligence(raw, details);
 
         return {
           id: row.id,
           name: row.name,
           industry: row.industry,
           overview_short: row.overview_short,
+
           score: intelligence.overall_score,
           positioning: intelligence.positioning,
           verdict: intelligence.verdict,
           key_insight: intelligence.key_takeaway,
-          offering_count: row.offerings?.length || 0,
-          capability_count: row.capabilities?.length || 0,
+
+          offering_count: details.offerings.length,
+          capability_count: details.capabilities.length,
+
           created_at: row.created_at,
-          details: {
-            offerings: row.offerings || [],
-            capabilities: row.capabilities || [],
-            benefits: row.benefits || [],
-            differentiators: row.differentiators || [],
-            pricing: row.pricing || 'Pricing not available'
-          }
+          original_id: row.id, // 🔥 important
+
+          details
         };
       });
 
-      // Apply frontend compatibility transformation
+      // Compatibility layer
       transformedData = DataCompatibility.transformForFrontend(transformedData);
-      
-      // Add missing 6th company if needed
       transformedData = DataCompatibility.addMissingCompany(transformedData);
 
       return transformedData;
@@ -99,30 +123,21 @@ class ClientService {
     }
   }
 
-  /**
-   * Get single client with full intelligence
-   */
   static async getClientById(id) {
     try {
-      // Get all clients with compatibility transformation
       const allClients = await this.getAllClients();
-      
-      // Find the client by ID
       const client = allClients.find(c => c.id == id);
-      
-      if (!client) {
-        throw new Error('Client not found');
-      }
 
-      // Get full details from database for this client
-      // If original_id is null (synthetic company), return the transformed data
+      if (!client) throw new Error('Client not found');
+
+      // 🔥 Synthetic (CloudMesh case)
       if (client.original_id === null) {
         return {
           client: {
             id: client.id,
             name: client.name,
             industry: client.industry,
-            overview: client.overview_short || client.overview,
+            overview: client.overview_short,
             created_at: client.created_at
           },
           details: client.details,
@@ -131,19 +146,23 @@ class ClientService {
             positioning: client.positioning,
             verdict: client.verdict,
             key_takeaway: client.key_insight,
-            strengths: ["Strong market positioning", "Growing customer base", "Competitive pricing"],
-            weaknesses: ["Limited brand recognition", "Smaller market share"],
-            risks: ["Market competition", "Technology complexity"],
-            opportunities: ["Market expansion", "Feature enhancement", "Partnership opportunities"],
-            differentiator_score: 6.7,
-            market_score: 7.2,
-            product_score: 6.8,
-            pricing_score: 7.5,
-            moat_score: 6.5
+
+            strengths: ["Strong positioning", "Growing adoption"],
+            weaknesses: ["Limited scale", "Niche focus"],
+            risks: ["Competition", "Market saturation"],
+            opportunities: ["Expansion", "New features"],
+
+            scores: {
+              differentiation: 70,
+              market: 72,
+              product: 75,
+              pricing: 78,
+              moat: 68
+            }
           }
         };
       }
-
+      
       const result = await pool.query(`
         SELECT 
           c.id,
@@ -183,9 +202,14 @@ class ClientService {
         pricing: row.pricing
       };
 
-      const intelligence = IntelligenceEngine.generateIntelligence(clientData, details);
+      const raw = IntelligenceEngine.generateIntelligence(clientData, details);
+      const intelligence = this.normalizeIntelligence(raw, details);
 
-      return { client: clientData, details, intelligence };
+      return {
+        client: clientData,
+        details,
+        intelligence
+      };
 
     } catch (error) {
       throw new Error(`Failed to fetch client: ${error.message}`);
@@ -193,7 +217,7 @@ class ClientService {
   }
 
   /**
-   * Seed clients with DEFAULT DATA (FIXED)
+   * Seed
    */
   static async seedClients(clientsData = []) {
     const client = await pool.connect();
@@ -201,7 +225,6 @@ class ClientService {
     try {
       await client.query('BEGIN');
 
-      // 🔥 DEFAULT DATA IF EMPTY
       if (!clientsData || clientsData.length === 0) {
         clientsData = [
           {
@@ -213,26 +236,6 @@ class ClientService {
             benefits: ["Easy integration"],
             differentiators: ["Developer-first"],
             pricing: "Usage-based"
-          },
-          {
-            name: "Datadog",
-            industry: "DevOps",
-            overview: "Monitoring and analytics platform",
-            offerings: ["Monitoring", "Logging"],
-            capabilities: ["Real-time metrics"],
-            benefits: ["Performance insights"],
-            differentiators: ["Unified dashboard"],
-            pricing: "Subscription"
-          },
-          {
-            name: "Notion",
-            industry: "Productivity",
-            overview: "All-in-one workspace",
-            offerings: ["Docs", "Tasks"],
-            capabilities: ["Collaboration"],
-            benefits: ["Flexibility"],
-            differentiators: ["All-in-one"],
-            pricing: "Freemium"
           }
         ];
       }
@@ -275,15 +278,14 @@ class ClientService {
 
       await client.query('COMMIT');
 
-      return { inserted, skipped, message: 'Seeding completed safely' };
+      return { inserted, skipped };
 
     } catch (error) {
       await client.query('ROLLBACK');
-      throw new Error(`Seeding failed: ${error.message}`);
+      throw new Error(error.message);
     } finally {
       client.release();
     }
   }
 }
-
 module.exports = ClientService;
