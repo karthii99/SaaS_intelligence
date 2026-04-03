@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug - SaaS Intelligence</title>
+</head>
+<body>
+    <h1>Frontend Debug Info</h1>
+    <p>API URL: <span id="api-url"></span></p>
+    <p>Environment: <span id="env"></span></p>
+    
+    <h2>API Test</h2>
+    <button onclick="testAPI()">Test API</button>
+    <div id="result"></div>
+    
+    <script>
+        // Show environment info
+        document.getElementById('env').textContent = import.meta.env.MODE || 'unknown';
+        document.getElementById('api-url').textContent = import.meta.env.VITE_API_URL || 'not set';
+        
+        function testAPI() {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const url = `${apiUrl}/api/clients`;
+            
+            document.getElementById('result').innerHTML = `Testing: ${url}`;
+            
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('result').innerHTML = `
+                        <h3>Success!</h3>
+                        <p>Status: ${data.success}</p>
+                        <p>Clients: ${data.data ? data.data.length : 0}</p>
+                    `;
+                })
+                .catch(err => {
+                    document.getElementById('result').innerHTML = `
+                        <h3>Error!</h3>
+                        <p>${err.message}</p>
+                    `;
+                });
+        }
+    </script>
+</body>
+</html>
