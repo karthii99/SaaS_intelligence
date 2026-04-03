@@ -63,15 +63,29 @@ class ClientService {
           c.name,
           c.industry,
           c.overview,
-          LEFT(c.overview, 100) as overview_short,
+          c.overview_short,
+          c.score,
+          c.positioning,
+          c.verdict,
+          c.key_insight,
           cd.offerings,
           cd.capabilities,
           cd.benefits,
           cd.differentiators,
           cd.pricing,
+          ci.differentiator_score,
+          ci.market_score,
+          ci.product_score,
+          ci.pricing_score,
+          ci.moat_score,
+          ci.strengths,
+          ci.weaknesses,
+          ci.risks,
+          ci.opportunities,
           c.created_at
         FROM clients c
         LEFT JOIN client_details cd ON c.id = cd.client_id
+        LEFT JOIN client_intelligence ci ON c.id = ci.client_id
       `;
 
       const params = [];
@@ -104,17 +118,24 @@ class ClientService {
           pricing: row.pricing
         };
 
-        const raw = IntelligenceEngine.generateIntelligence(
-          {
-            id: row.id,
-            name: row.name,
-            industry: row.industry,
-            overview: row.overview
-          },
-          details
-        );
+        // Create intelligence object from database data
+        const rawIntelligence = {
+          overall_score: row.score,
+          positioning: row.positioning,
+          verdict: row.verdict,
+          key_takeaway: row.key_insight,
+          differentiator_score: row.differentiator_score,
+          market_score: row.market_score,
+          product_score: row.product_score,
+          pricing_score: row.pricing_score,
+          moat_score: row.moat_score,
+          strengths: row.strengths,
+          weaknesses: row.weaknesses,
+          risks: row.risks,
+          opportunities: row.opportunities
+        };
 
-        const intelligence = this.normalizeIntelligence(raw, details);
+        const intelligence = this.normalizeIntelligence(rawIntelligence, details);
 
         return {
           id: row.id,
