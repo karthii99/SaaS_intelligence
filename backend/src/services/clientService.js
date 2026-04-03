@@ -130,7 +130,11 @@ class ClientService {
             overall_score: client.score,
             positioning: client.positioning,
             verdict: client.verdict,
-            key_takeaway: client.key_insight
+            key_takeaway: client.key_insight,
+            strengths: ["Strong market positioning", "Growing customer base", "Competitive pricing"],
+            weaknesses: ["Limited brand recognition", "Smaller market share"],
+            risks: ["Market competition", "Technology complexity"],
+            opportunities: ["Market expansion", "Feature enhancement", "Partnership opportunities"]
           }
         };
       }
