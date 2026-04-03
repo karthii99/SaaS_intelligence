@@ -4,7 +4,7 @@ const DataCompatibility = require('./dataCompatibility');
 
 class ClientService {
 
-  // 🔥 Normalize intelligence (ONLY used in list)
+  // 🔥 Normalize intelligence (ONLY used in list view)
   static normalizeIntelligence(raw, details) {
     const baseScore = raw?.overall_score
       ? Math.round(raw.overall_score * 10)
@@ -34,7 +34,7 @@ class ClientService {
   }
 
   /**
-   * GET ALL CLIENTS (MAIN SOURCE OF TRUTH)
+   * 🔥 GET ALL CLIENTS (SOURCE OF TRUTH)
    */
   static async getAllClients(search = '', industry = '') {
     try {
@@ -115,9 +115,6 @@ class ClientService {
           created_at: row.created_at,
           original_id: row.id,
 
-          // 🔥 store computed intelligence (IMPORTANT)
-          _intelligence: intelligence,
-
           details
         };
       });
@@ -133,7 +130,7 @@ class ClientService {
   }
 
   /**
-   * GET CLIENT BY ID (NO RE-CALCULATION)
+   * 🔥 GET CLIENT BY ID (NO RE-CALCULATION)
    */
   static async getClientById(id) {
     try {
@@ -142,7 +139,18 @@ class ClientService {
 
       if (!client) throw new Error('Client not found');
 
-      // 🔥 CloudMesh synthetic case
+      // 🔥 Generate dynamic score breakdown (NO ZEROS)
+      const score = Number(client.score) || 80;
+
+      const scoreBreakdown = {
+        differentiation: Math.min(score, 95),
+        market: Math.max(score - 5, 60),
+        product: score,
+        pricing: Math.max(score - 10, 50),
+        moat: Math.max(score - 7, 55)
+      };
+
+      // 🔥 CloudMesh case
       if (client.original_id === null) {
         return {
           client: {
@@ -154,7 +162,7 @@ class ClientService {
           },
           details: client.details,
           intelligence: {
-            overall_score: client.score,
+            overall_score: score,
             positioning: client.positioning,
             verdict: client.verdict,
             key_takeaway: client.key_insight,
@@ -164,18 +172,12 @@ class ClientService {
             risks: ["Competition"],
             opportunities: ["Expansion"],
 
-            scores: {
-              differentiation: 75,
-              market: 70,
-              product: client.score,
-              pricing: 78,
-              moat: 72
-            }
+            scores: scoreBreakdown
           }
         };
       }
 
-      // 🔥 NORMAL CASE (USE EXISTING DATA — NO ENGINE CALL)
+      // 🔥 NORMAL CASE
       return {
         client: {
           id: client.id,
@@ -186,7 +188,7 @@ class ClientService {
         },
         details: client.details,
         intelligence: {
-          overall_score: client.score,
+          overall_score: score,
           positioning: client.positioning,
           verdict: client.verdict,
           key_takeaway: client.key_insight,
@@ -196,13 +198,7 @@ class ClientService {
           risks: [],
           opportunities: [],
 
-          scores: {
-            differentiation: 80,
-            market: 75,
-            product: client.score,
-            pricing: 70,
-            moat: 78
-          }
+          scores: scoreBreakdown
         }
       };
 
@@ -212,7 +208,7 @@ class ClientService {
   }
 
   /**
-   * SEED (unchanged)
+   * SEED (UNCHANGED)
    */
   static async seedClients(clientsData = []) {
     const client = await pool.connect();
