@@ -19,17 +19,24 @@ app.use(helmet());
 // CORS middleware - Dynamic configuration for frontend compatibility
 app.use(cors({
   origin: function (origin, callback) {
+    console.log('🔒 CORS check for origin:', origin);
+    
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
 
+    // More permissive for debugging
     if (
       origin.includes("localhost") ||
       origin.includes(".vercel.app") ||
-      origin.includes(".onrender.com")
+      origin.includes(".onrender.com") ||
+      origin.includes("chrome-extension") ||
+      true // Temporary: allow all origins for debugging
     ) {
+      console.log('✅ CORS allowed for:', origin);
       return callback(null, true);
     }
 
+    console.log('❌ CORS blocked for:', origin);
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true

@@ -4,51 +4,69 @@ const DataCompatibility = require('./dataCompatibility');
 
 class ClientService {
 
-  // 🔥 Normalize intelligence (FIXED SCALE + SAFE VALUES)
-  static normalizeIntelligence(raw, details) {
+  /**
+   * 🔥 STANDARDIZE INTELLIGENCE STRUCTURE
+   */
+  static createStandardIntelligence(raw, details) {
     const baseScore = raw?.overall_score
-      ? Math.round(raw.overall_score * 10) // 🔥 fix 0–10 → 0–100
+      ? Math.round(raw.overall_score * 10) // Convert 0–10 → 0–100
       : 80;
+
+    // 🔥 FIXED SCORE BREAKDOWN (NEVER ZERO)
+    const scores = {
+      differentiation: raw?.differentiator_score 
+        ? Math.round(raw.differentiator_score * 10)
+        : Math.min(baseScore, 95),
+
+      market: raw?.market_score 
+        ? Math.round(raw.market_score * 10)
+        : Math.max(baseScore - 5, 60),
+
+      product: raw?.product_score 
+        ? Math.round(raw.product_score * 10)
+        : baseScore,
+
+      pricing: raw?.pricing_score 
+        ? Math.round(raw.pricing_score * 10)
+        : Math.max(baseScore - 10, 50),
+
+      moat: raw?.moat_score 
+        ? Math.round(raw.moat_score * 10)
+        : Math.max(baseScore - 7, 55)
+    };
+
+    // 🔥 FIXED EMPTY ARRAYS (ALWAYS HAVE VALUES)
+    const strengths = raw?.strengths?.length > 0 
+      ? raw.strengths 
+      : details?.capabilities?.slice(0, 3) || ["Strong technical foundation", "Market presence"];
+
+    const weaknesses = raw?.weaknesses?.length > 0 
+      ? raw.weaknesses 
+      : details?.differentiators?.slice(0, 2) || ["Limited brand recognition", "Smaller market share"];
+
+    const risks = raw?.risks?.length > 0 
+      ? raw.risks 
+      : ["Market competition", "Execution risk"];
+
+    const opportunities = raw?.opportunities?.length > 0 
+      ? raw.opportunities 
+      : ["Market expansion", "Product innovation"];
 
     return {
       overall_score: baseScore,
       positioning: raw?.positioning || "Challenger",
-      verdict:
-        baseScore >= 85
-          ? "Strong Candidate"
-          : baseScore >= 70
-          ? "Moderate Risk"
-          : "Weak",
-
-      key_takeaway: raw?.key_takeaway || "",
-
-      strengths: raw?.strengths || details?.capabilities || [],
-      weaknesses: raw?.weaknesses || details?.differentiators || [],
-      risks: raw?.risks || [],
-      opportunities: raw?.opportunities || [],
-
-      // 🔥 FIXED SCORE BREAKDOWN (NO ZERO)
-      scores: {
-        differentiation: raw?.differentiator_score
-          ? Math.round(raw.differentiator_score * 10)
-          : Math.min(baseScore, 95),
-
-        market: raw?.market_score
-          ? Math.round(raw.market_score * 10)
-          : Math.max(baseScore - 5, 60),
-
-        product: raw?.product_score
-          ? Math.round(raw.product_score * 10)
-          : baseScore,
-
-        pricing: raw?.pricing_score
-          ? Math.round(raw.pricing_score * 10)
-          : Math.max(baseScore - 10, 50),
-
-        moat: raw?.moat_score
-          ? Math.round(raw.moat_score * 10)
-          : Math.max(baseScore - 7, 55)
-      }
+      verdict: raw?.verdict || (
+        baseScore >= 85 ? "Strong Candidate" : 
+        baseScore >= 70 ? "Moderate Risk" : "Weak"
+      ),
+      key_takeaway: raw?.key_takeaway || "Requires further analysis",
+      
+      strengths,
+      weaknesses,
+      risks,
+      opportunities,
+      
+      scores
     };
   }
 
@@ -111,8 +129,11 @@ class ClientService {
           pricing: row.pricing
         };
 
-        // Generate intelligence using the IntelligenceEngine
-        const intelligence = IntelligenceEngine.generateIntelligence(clientData, details);
+        // Generate intelligence using IntelligenceEngine
+        const rawIntelligence = IntelligenceEngine.generateIntelligence(clientData, details);
+        
+        // Standardize the intelligence structure
+        const intelligence = this.createStandardIntelligence(rawIntelligence, details);
 
         return {
           id: row.id,
@@ -120,6 +141,7 @@ class ClientService {
           industry: row.industry,
           overview_short: row.overview, // Use overview as overview_short
 
+          // 🔥 USE STANDARDIZED VALUES
           score: intelligence.overall_score,
           positioning: intelligence.positioning,
           verdict: intelligence.verdict,
@@ -146,18 +168,23 @@ class ClientService {
   }
 
   /**
-   * 🔥 GET CLIENT BY ID (NO RE-CALCULATION BUG)
+   * 🔥 GET CLIENT BY ID (USE CACHED VALUES)
    */
   static async getClientById(id) {
     try {
+      // Get all clients to ensure consistency
       const allClients = await this.getAllClients();
       const client = allClients.find(c => c.id == id);
 
       if (!client) throw new Error('Client not found');
 
+      // 🔥 USE CACHED VALUES - NO RECOMPUTATION
       const score = Number(client.score) || 80;
+      const positioning = client.positioning || "Challenger";
+      const verdict = client.verdict || "Moderate Risk";
+      const keyInsight = client.key_insight || "Requires further analysis";
 
-      // 🔥 FIXED breakdown (ALWAYS VALID)
+      // 🔥 CONSISTENT SCORE BREAKDOWN
       const scores = {
         differentiation: Math.min(score, 95),
         market: Math.max(score - 5, 60),
@@ -166,7 +193,14 @@ class ClientService {
         moat: Math.max(score - 7, 55)
       };
 
-      // 🔥 CloudMesh case
+      // 🔥 CONSISTENT ARRAY DATA
+      const details = client.details || {};
+      const strengths = details.capabilities?.slice(0, 3) || ["Strong technical foundation", "Market presence"];
+      const weaknesses = details.differentiators?.slice(0, 2) || ["Limited brand recognition", "Smaller market share"];
+      const risks = ["Market competition", "Execution risk"];
+      const opportunities = ["Market expansion", "Product innovation"];
+
+      // 🔥 CloudMesh case (synthetic client)
       if (client.original_id === null) {
         return {
           client: {
@@ -179,21 +213,21 @@ class ClientService {
           details: client.details,
           intelligence: {
             overall_score: score,
-            positioning: client.positioning,
-            verdict: client.verdict,
-            key_takeaway: client.key_insight,
-
-            strengths: ["Strong positioning", "Growing adoption"],
-            weaknesses: ["Limited scale", "Niche focus"],
-            risks: ["Competition"],
-            opportunities: ["Expansion"],
-
+            positioning: positioning,
+            verdict: verdict,
+            key_takeaway: keyInsight,
+            
+            strengths: ["Strong market positioning", "Growing customer base", "Competitive pricing"],
+            weaknesses: ["Limited brand recognition", "Smaller market share"],
+            risks: ["Market competition", "Technology complexity"],
+            opportunities: ["Market expansion", "Feature enhancement", "Partnership opportunities"],
+            
             scores
           }
         };
       }
 
-      // 🔥 NORMAL CASE (NO ENGINE CALL HERE)
+      // 🔥 NORMAL CASE (USE CACHED VALUES)
       return {
         client: {
           id: client.id,
@@ -205,15 +239,15 @@ class ClientService {
         details: client.details,
         intelligence: {
           overall_score: score,
-          positioning: client.positioning,
-          verdict: client.verdict,
-          key_takeaway: client.key_insight,
-
-          strengths: client.details.capabilities || [],
-          weaknesses: client.details.differentiators || [],
-          risks: [],
-          opportunities: [],
-
+          positioning: positioning,
+          verdict: verdict,
+          key_takeaway: keyInsight,
+          
+          strengths,
+          weaknesses,
+          risks,
+          opportunities,
+          
           scores
         }
       };
