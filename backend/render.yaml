@@ -1,0 +1,23 @@
+services:
+  # Node.js API Service
+  - type: web
+    name: saas-intelligence-api
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    
+    # Environment variables
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false  # Set this in Render dashboard
+
+    # Auto-deploy from GitHub
+    repo: https://github.com/karthii99/SaaS_intelligence.git
+    rootDir: backend
+    branch: main

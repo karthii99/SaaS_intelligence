@@ -24,7 +24,8 @@ app.use(cors({
 
     if (
       origin.includes("localhost") ||
-      origin.includes(".vercel.app")
+      origin.includes(".vercel.app") ||
+      origin.includes(".onrender.com")
     ) {
       return callback(null, true);
     }
