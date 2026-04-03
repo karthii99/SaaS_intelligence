@@ -63,17 +63,12 @@ class ClientService {
           c.name,
           c.industry,
           c.overview,
-          c.overview_short,
-          c.score,
-          c.positioning,
-          c.verdict,
-          c.key_insight,
+          c.created_at,
           cd.offerings,
           cd.capabilities,
           cd.benefits,
           cd.differentiators,
-          cd.pricing,
-          c.created_at
+          cd.pricing
         FROM clients c
         LEFT JOIN client_details cd ON c.id = cd.client_id
       `;
@@ -123,7 +118,7 @@ class ClientService {
           id: row.id,
           name: row.name,
           industry: row.industry,
-          overview_short: row.overview_short || row.overview,
+          overview_short: row.overview, // Use overview as overview_short
 
           score: intelligence.overall_score,
           positioning: intelligence.positioning,
