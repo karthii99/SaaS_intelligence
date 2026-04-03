@@ -55,11 +55,11 @@ const ClientDetail = () => {
           opportunities: api.intelligence.opportunities || ["Market expansion", "Feature enhancement", "Partnership opportunities"],
           weaknesses: api.intelligence.weaknesses || ["Limited brand recognition", "Smaller market share"],
           scores: {
-            differentiation: (api.intelligence.differentiator_score || 0) * 10,
-            market: (api.intelligence.market_score || 0) * 10,
-            product: (api.intelligence.product_score || 0) * 10,
-            pricing: (api.intelligence.pricing_score || 0) * 10,
-            moat: (api.intelligence.moat_score || 0) * 10,
+            differentiation: api.intelligence.scores?.differentiation || 0,
+            market: api.intelligence.scores?.market || 0,
+            product: api.intelligence.scores?.product || 0,
+            pricing: api.intelligence.scores?.pricing || 0,
+            moat: api.intelligence.scores?.moat || 0,
           },
           scoreInterpretations: {
             differentiation: "Strong competitive advantage",
