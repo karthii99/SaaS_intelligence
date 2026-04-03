@@ -28,7 +28,11 @@ const ClientDetail = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:3000/api/clients/${id}`)
+    // Use environment variable or fallback to production URL
+    const apiUrl = import.meta.env.VITE_API_URL || "https://saas-intelligence.onrender.com";
+    console.log("🔗 Using API URL:", apiUrl);
+    
+    fetch(`${apiUrl}/api/clients/${id}`)
       .then(res => res.json())
       .then(data => {
         const api = data.data;

@@ -33,14 +33,18 @@ const Index = () => {
   const [clients, setClients] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/clients")
+    // Use environment variable or fallback to production URL
+    const apiUrl = import.meta.env.VITE_API_URL || "https://saas-intelligence.onrender.com";
+    console.log("🔗 Using API URL:", apiUrl);
+    
+    fetch(`${apiUrl}/api/clients`)
       .then(res => res.json())
       .then(data => {
         setClients(data.data || []);
         setLoading(false);
       })
       .catch(err => {
-        console.error(err);
+        console.error("API Error:", err);
         setLoading(false);
       });
   }, []);
