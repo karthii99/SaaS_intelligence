@@ -4,22 +4,19 @@ const DataCompatibility = require('./dataCompatibility');
 
 class ClientService {
 
-  // 🔥 Normalize + FIX intelligence
+  // 🔥 Normalize intelligence (ONLY used in list)
   static normalizeIntelligence(raw, details) {
     const baseScore = raw?.overall_score
-      ? Math.round(raw.overall_score * 10) // 🔥 FIX SCALE (0–100)
+      ? Math.round(raw.overall_score * 10)
       : Math.round(
-          (
-            (details.capabilities?.length || 0) * 15 +
-            (details.offerings?.length || 0) * 10 +
-            (details.differentiators?.length || 0) * 12
-          )
+          (details.capabilities?.length || 0) * 10 +
+          (details.offerings?.length || 0) * 8 +
+          (details.differentiators?.length || 0) * 9
         );
 
-    // 🔥 Verdict logic FIX
     const getVerdict = (score) => {
-      if (score >= 85) return "Strong";
-      if (score >= 70) return "Moderate";
+      if (score >= 85) return "Strong Candidate";
+      if (score >= 70) return "Moderate Risk";
       return "Weak";
     };
 
@@ -32,30 +29,12 @@ class ClientService {
       strengths: raw?.strengths || details?.capabilities || [],
       weaknesses: raw?.weaknesses || details?.differentiators || [],
       risks: raw?.risks || [],
-      opportunities: raw?.opportunities || [],
-
-      scores: {
-        differentiation: raw?.differentiator_score
-          ? Math.round(raw.differentiator_score * 10)
-          : 80,
-        market: raw?.market_score
-          ? Math.round(raw.market_score * 10)
-          : 80,
-        product: raw?.product_score
-          ? Math.round(raw.product_score * 10)
-          : 80,
-        pricing: raw?.pricing_score
-          ? Math.round(raw.pricing_score * 10)
-          : 80,
-        moat: raw?.moat_score
-          ? Math.round(raw.moat_score * 10)
-          : 80
-      }
+      opportunities: raw?.opportunities || []
     };
   }
 
   /**
-   * GET ALL CLIENTS
+   * GET ALL CLIENTS (MAIN SOURCE OF TRUTH)
    */
   static async getAllClients(search = '', industry = '') {
     try {
@@ -136,6 +115,9 @@ class ClientService {
           created_at: row.created_at,
           original_id: row.id,
 
+          // 🔥 store computed intelligence (IMPORTANT)
+          _intelligence: intelligence,
+
           details
         };
       });
@@ -151,7 +133,7 @@ class ClientService {
   }
 
   /**
-   * GET CLIENT BY ID
+   * GET CLIENT BY ID (NO RE-CALCULATION)
    */
   static async getClientById(id) {
     try {
@@ -160,7 +142,7 @@ class ClientService {
 
       if (!client) throw new Error('Client not found');
 
-      // 🔥 Synthetic (CloudMesh)
+      // 🔥 CloudMesh synthetic case
       if (client.original_id === null) {
         return {
           client: {
@@ -185,7 +167,7 @@ class ClientService {
             scores: {
               differentiation: 75,
               market: 70,
-              product: 80,
+              product: client.score,
               pricing: 78,
               moat: 72
             }
@@ -193,52 +175,35 @@ class ClientService {
         };
       }
 
-      const result = await pool.query(`
-        SELECT 
-          c.id,
-          c.name,
-          c.industry,
-          c.overview,
-          cd.offerings,
-          cd.capabilities,
-          cd.benefits,
-          cd.differentiators,
-          cd.pricing,
-          c.created_at
-        FROM clients c
-        LEFT JOIN client_details cd ON c.id = cd.client_id
-        WHERE c.id = $1
-      `, [client.original_id]);
-
-      if (result.rows.length === 0) {
-        throw new Error('Client not found');
-      }
-
-      const row = result.rows[0];
-
-      const clientData = {
-        id: row.id,
-        name: row.name,
-        industry: row.industry,
-        overview: row.overview,
-        created_at: row.created_at
-      };
-
-      const details = {
-        offerings: row.offerings || [],
-        capabilities: row.capabilities || [],
-        benefits: row.benefits || [],
-        differentiators: row.differentiators || [],
-        pricing: row.pricing
-      };
-
-      const raw = IntelligenceEngine.generateIntelligence(clientData, details);
-      const intelligence = this.normalizeIntelligence(raw, details);
-
+      // 🔥 NORMAL CASE (USE EXISTING DATA — NO ENGINE CALL)
       return {
-        client: clientData,
-        details,
-        intelligence
+        client: {
+          id: client.id,
+          name: client.name,
+          industry: client.industry,
+          overview: client.overview_short,
+          created_at: client.created_at
+        },
+        details: client.details,
+        intelligence: {
+          overall_score: client.score,
+          positioning: client.positioning,
+          verdict: client.verdict,
+          key_takeaway: client.key_insight,
+
+          strengths: client.details.capabilities || [],
+          weaknesses: client.details.differentiators || [],
+          risks: [],
+          opportunities: [],
+
+          scores: {
+            differentiation: 80,
+            market: 75,
+            product: client.score,
+            pricing: 70,
+            moat: 78
+          }
+        }
       };
 
     } catch (error) {
