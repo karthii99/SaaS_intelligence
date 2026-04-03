@@ -134,7 +134,12 @@ class ClientService {
             strengths: ["Strong market positioning", "Growing customer base", "Competitive pricing"],
             weaknesses: ["Limited brand recognition", "Smaller market share"],
             risks: ["Market competition", "Technology complexity"],
-            opportunities: ["Market expansion", "Feature enhancement", "Partnership opportunities"]
+            opportunities: ["Market expansion", "Feature enhancement", "Partnership opportunities"],
+            differentiator_score: 6.7,
+            market_score: 7.2,
+            product_score: 6.8,
+            pricing_score: 7.5,
+            moat_score: 6.5
           }
         };
       }
