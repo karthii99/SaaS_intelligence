@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Simple Frontend Test</h1>
+    <div id="status">Loading...</div>
+    
+    <h2>API Test</h2>
+    <button onclick="testAPI()">Test Backend API</button>
+    <div id="api-result"></div>
+    
+    <script>
+        document.getElementById('status').innerHTML = '<span class="success">✅ HTML loads correctly</span>';
+        
+        function testAPI() {
+            const result = document.getElementById('api-result');
+            result.innerHTML = 'Testing...';
+            
+            fetch('https://saas-intelligence.onrender.com/health')
+                .then(res => res.json())
+                .then(data => {
+                    result.innerHTML = `
+                        <div class="success">
+                            <h3>✅ API Working!</h3>
+                            <p>Status: ${data.status}</p>
+                            <p>Success: ${data.success}</p>
+                        </div>
+                    `;
+                })
+                .catch(err => {
+                    result.innerHTML = `
+                        <div class="error">
+                            <h3>❌ API Error</h3>
+                            <p>${err.message}</p>
+                        </div>
+                    `;
+                });
+        }
+    </script>
+</body>
+</html>
