@@ -37,7 +37,10 @@ const Index = () => {
     const apiUrl = import.meta.env.VITE_API_URL || "https://saas-intelligence.onrender.com";
     console.log("🔗 Using API URL:", apiUrl);
     
-    fetch(`${apiUrl}/api/clients`)
+    // Add cache-busting timestamp
+    const timestamp = new Date().getTime();
+    
+    fetch(`${apiUrl}/api/clients?t=${timestamp}`)
       .then(res => res.json())
       .then(data => {
         setClients(data.data || []);
