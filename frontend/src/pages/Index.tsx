@@ -39,15 +39,23 @@ const Index = () => {
     
     // Add cache-busting timestamp
     const timestamp = new Date().getTime();
+    const url = `${apiUrl}/api/clients?t=${timestamp}`;
     
-    fetch(`${apiUrl}/api/clients?t=${timestamp}`)
-      .then(res => res.json())
+    console.log("🌐 Fetching from:", url);
+    
+    fetch(url)
+      .then(res => {
+        console.log("📡 Response status:", res.status);
+        return res.json();
+      })
       .then(data => {
+        console.log("📊 API Response:", data);
+        console.log("📈 Clients count:", data.data?.length || 0);
         setClients(data.data || []);
         setLoading(false);
       })
       .catch(err => {
-        console.error("API Error:", err);
+        console.error("❌ API Error:", err);
         setLoading(false);
       });
   }, []);
